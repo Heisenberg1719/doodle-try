@@ -1,11 +1,12 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for, session, make_response
 import requests
+from waitress import serve
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'  # Replace with a secure key
 
 # Backend API URL
-API_BASE_URL = 'https://bookish-pancake-v6grvx59jrrp3x649-8080.app.github.dev/'
+API_BASE_URL = 'https://stp-advance.onrender.com/'
 
 # Utility function to extract a cookie value by its name
 def get_cookie_value(cookies, cookie_name):
@@ -57,8 +58,10 @@ def login():
             csrf_access_token = get_cookie_value(session_requests.cookies, 'csrf_access_token')
 
             if csrf_access_token:
-                # Redirect to profile with CSRF token
-                return redirect(url_for('profile', csrf_token=csrf_access_token))
+                # Store CSRF token in an HttpOnly cookie and redirect to profile
+                resp = make_response(redirect(url_for('profile')))
+                resp.set_cookie('csrf_access_token', csrf_access_token, httponly=True, secure=True)
+                return resp
             else:
                 return "CSRF token not found in cookies.", 400
         else:
@@ -66,9 +69,10 @@ def login():
 
 @app.route('/profile')
 def profile():
-    csrf_token = request.args.get('csrf_token')
+    # Retrieve CSRF token from the cookie
+    csrf_token = request.cookies.get('csrf_access_token')
 
-    if 'session_cookies' in session:
+    if 'session_cookies' in session and csrf_token:
         # Create a new session with cookies
         session_requests = requests.Session()
         session_requests.cookies.update(session['session_cookies'])
@@ -86,7 +90,8 @@ def profile():
         else:
             return f"Failed to access the profile. Status code: {profile_response.status_code}", 400
     else:
-        return "No session cookies found. Please login.", 400
+        return "No session cookies or CSRF token found. Please login.", 400
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # Use Waitress to serve the app in production
+    serve(app, host='0.0.0.0', port=8080)
