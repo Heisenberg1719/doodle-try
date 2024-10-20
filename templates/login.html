@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    <h4 class="mb-4">Login with Phone Number</h4>
+    <form action="{{ url_for('login') }}" method="GET">
+        <div class="mb-3">
+            <label for="phone_number" class="form-label">Phone Number</label>
+            <input type="text" class="form-control form-control-lg" id="phone_number" name="phone_number" placeholder="Enter your phone number" required>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 btn-lg">Submit</button>
+    </form>
+</div>
+{% endblock %}
